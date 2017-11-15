@@ -9,9 +9,11 @@ def main(build):
 @task_requires("main")
 def test(build):
     """ execute tests """
-    build.packages.install("pytest", version="==2.9.2")
-    build.packages.install("pytest-cov")
-    build.packages.install("httpretty", version="==0.8.10")
+    build.packages.install_list([
+        "pytest==2.9.2",
+        "pytest-cov",
+        "httpretty==0.8.10"
+    ])
     build.executables.run([
         "py.test", os.path.join(build.root, "tests"),
         "--cov", "uranium",
@@ -22,9 +24,9 @@ def test(build):
 @task_requires("main")
 def build_docs(build):
     """ build documentation """
-    build.packages.install("Babel")
-    build.packages.install("Sphinx")
-    build.packages.install("sphinx_rtd_theme")
+    build.packages.install_list([
+        "Babel", "Sphinx", "sphinx_rtd_theme"
+    ])
     return build.executables.run([
         "sphinx-build", "docs",
         os.path.join("docs", "_build")

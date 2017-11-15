@@ -1,5 +1,5 @@
 test:
-	./uranium/scripts/uranium_standalone --uranium-dir=. test ${ARGS} -v -s
+	./uranium/scripts/uranium_standalone --uranium-dir=. test ${ARGS} -v -s -k test_uninstall
 
 build:
 	./uranium/scripts/uranium_standalone --uranium-dir=.

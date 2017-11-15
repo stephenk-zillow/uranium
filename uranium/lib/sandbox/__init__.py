@@ -3,6 +3,7 @@ import os
 import subprocess
 import sys
 from .venv import install_virtualenv, activate_virtualenv
+import virtualenv
 
 
 class Sandbox(object):
@@ -15,6 +16,7 @@ class Sandbox(object):
     def initialize(self):
         install_virtualenv(self._root)
         self._initialized = True
+        virtualenv.make_environment_relocatable(self._root)
         # self.execute("easy_install", ["pip"])
 
     def execute(self, executable_name, args=None, link_pipes=False):

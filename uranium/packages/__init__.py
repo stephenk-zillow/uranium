@@ -1,3 +1,4 @@
+import os
 from ..lib.asserts import get_assert_function
 from ..exceptions import PackageException
 from .versions import Versions
@@ -17,9 +18,10 @@ class Packages(object):
     mutable: updating them will take immediate effect.
     """
 
-    def __init__(self, virtualenv_dir=None, pip_executable=None):
+    def __init__(self, virtualenv_dir=None):
         self._virtualenv_dir = virtualenv_dir
-        self._pip = PipPuppet("pip")
+        pip_executable = os.path.join(self._virtualenv_dir, "bin", "pip")
+        self._pip = PipPuppet(pip_executable)
         self._versions = Versions()
         self._index_urls = list(DEFAULT_INDEX_URLS)
 
