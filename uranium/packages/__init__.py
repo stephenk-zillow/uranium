@@ -1,7 +1,7 @@
 from ..lib.asserts import get_assert_function
 from ..exceptions import PackageException
-from .install_command import install, uninstall
 from .versions import Versions
+from .pippuppet import PipPuppet
 import virtualenv
 
 p_assert = get_assert_function(PackageException)
@@ -17,8 +17,9 @@ class Packages(object):
     mutable: updating them will take immediate effect.
     """
 
-    def __init__(self, virtualenv_dir=None):
+    def __init__(self, virtualenv_dir=None, pip_executable=None):
         self._virtualenv_dir = virtualenv_dir
+        self._pip = PipPuppet("pip")
         self._versions = Versions()
         self._index_urls = list(DEFAULT_INDEX_URLS)
 
@@ -45,6 +46,13 @@ class Packages(object):
         return self._versions
 
     @property
+    def constraints(self):
+        """ versions, specified as a list of constraint syntax. """
+        constraints = [
+            "{0}{1}".format(k, v) for k, v in self.versions.items()
+        ]
+
+    @property
     def index_urls(self):
         """
         index urls is a list of the urls that Packages queries when
@@ -58,7 +66,26 @@ class Packages(object):
                  "only lists can be set as a value for indexes")
         self._index_urls = value
 
-    def install(self, name, version=None, develop=False, upgrade=False, install_options=None):
+    def install_list(self, requirement_list, upgrade=False, install_options=None):
+        """ install a list of requirements """
+        self._pip.install(
+            requirements=requirement_list,
+            constraints=self.constraints,
+            upgrade=upgrade,
+            install_options=install_options,
+            prefix=self._virtualenv_dir
+        )
+        for package, details in self._pip.installed_packages.items():
+            self.versions[package] = "==" + details["version"]
+
+        # if virtualenv dir is set, we should make the environment relocatable.
+        # this will fix issues with commands not being usable by the
+        # uranium via build.executables.run
+        if self._virtualenv_dir:
+            virtualenv.make_environment_relocatable(self._virtualenv_dir)
+
+    def install(self, name, version=None, develop=False,
+                upgrade=False, install_options=None):
         """
         install is used when installing a python package into the environment.
 
@@ -83,21 +110,14 @@ class Packages(object):
             if version is None:
                 version = self.versions[name]
             del self.versions[name]
-        req_set = install(
-            name, upgrade=upgrade, develop=develop, version=version,
-            index_urls=self.index_urls, constraint_dict=self.versions,
-            install_options=install_options
-        )
-        if req_set:
-            for req in req_set.requirements.values():
-                if req.installed_version:
-                    self.versions[req.name] = ("==" + req.installed_version)
-        # if virtualenv dir is set, we should make the environment relocatable.
-        # this will fix issues with commands not being usable by the
-        # uranium via build.executables.run
-        if self._virtualenv_dir:
-            virtualenv.make_environment_relocatable(self._virtualenv_dir)
-
+        if develop:
+            requirement = "-e " + name
+        elif version:
+            requirement = name + version
+        else:
+            requirement = name
+        self.install_list([requirement], upgrade=upgrade,
+                           install_options=install_options)
 
     def uninstall(self, package_name):
         """
@@ -107,7 +127,7 @@ class Packages(object):
             self._is_package_already_installed(package_name, None),
             "package {package} doesn't exist".format(package=package_name)
         )
-        uninstall(package_name)
+        self._pip.uninstall(package_name)
 
     @staticmethod
     def _is_package_already_installed(name, version):
