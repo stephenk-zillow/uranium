@@ -20,7 +20,8 @@ class Packages(object):
 
     def __init__(self, virtualenv_dir=None):
         self._virtualenv_dir = virtualenv_dir
-        pip_executable = os.path.join(self._virtualenv_dir, "bin", "pip")
+        # pip_executable = os.path.join(self._virtualenv_dir, "bin", "pip")
+        pip_executable = os.path.join(self._virtualenv_dir, ".uranium", "bin", "pip")
         self._pip = PipPuppet(pip_executable)
         self._versions = Versions()
         self._index_urls = list(DEFAULT_INDEX_URLS)
